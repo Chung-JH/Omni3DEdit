@@ -3,8 +3,35 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from basicsr.metrics.metric_util import reorder_image, to_y_channel
-from basicsr.utils.color_util import rgb2ycbcr_pt
+def reorder_image(img, input_order='HWC'):
+    if input_order not in ['HWC', 'CHW']:
+        raise ValueError(f'Wrong input_order {input_order}. Supported input_orders are "HWC" and "CHW"')
+    if len(img.shape) == 2:
+        img = img[..., None]
+    if input_order == 'CHW':
+        img = img.transpose(1, 2, 0)
+    return img
+
+
+def to_y_channel(img):
+    img = img.astype(np.float32) / 255.
+    if img.ndim == 3 and img.shape[2] == 3:
+        img = np.dot(img, [65.481, 128.553, 24.966]) + 16.0
+        img = img[..., None] / 255.
+    return img * 255.
+
+
+def rgb2ycbcr_pt(img, y_only=False):
+    if y_only:
+        weight = torch.tensor([[65.481], [128.553], [24.966]]).to(img)
+        out_img = torch.matmul(img.permute(0, 2, 3, 1), weight).permute(0, 3, 1, 2) + 16.0
+    else:
+        weight = torch.tensor(
+            [[65.481, -37.797, 112.0], [128.553, -74.203, -93.786], [24.966, 112.0, -18.214]]
+        ).to(img)
+        bias = torch.tensor([16, 128, 128]).view(1, 3, 1, 1).to(img)
+        out_img = torch.matmul(img.permute(0, 2, 3, 1), weight).permute(0, 3, 1, 2) + bias
+    return out_img / 255.
 
 
 

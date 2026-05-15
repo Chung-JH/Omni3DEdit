@@ -165,8 +165,8 @@ train_data:
   params:
     json_folder: ./demo/jsons # ./training_data/jsons
     VERSION_DICT: ${VERSION_DICT}
-    datasets: ("co3d" "dl3dv")  # tuple of allowed datasets, e.g., ("dataset1", "dataset2") or null for all
-    editing_types: ("add" )  # tuple of allowed editing types, e.g., ("edit1", "edit2") or null for all
+    datasets: ["demo"]  # allowed dataset prefixes in demo/jsons
+    editing_types: ["add"]  # allowed editing types in demo/jsons
 
 
 train_dataloader:
@@ -179,8 +179,8 @@ test_data:
   params:
     json_folder: ./demo/jsons
     VERSION_DICT: ${VERSION_DICT}
-    datasets: ("demo" )  # tuple of allowed datasets, e.g., ("dataset1", "dataset2") or null for all
-    editing_types: ("add" )  # tuple of allowed editing types, e.g., ("edit1", "edit2") or null for all
+    datasets: ["demo"]  # allowed dataset prefixes in demo/jsons
+    editing_types: ["add"]  # allowed editing types in demo/jsons
 
 test_dataloader:
     batch_size: 1

@@ -26,13 +26,35 @@ def print_load_warning(missing: list[str], unexpected: list[str]) -> None:
         print(f"Got {len(unexpected)} unexpected keys:\n\t" + "\n\t".join(unexpected))
 
 
+def _resolve_local_weight_path(weight_name: str) -> str | None:
+    env_model_path = os.environ.get("SEVA_MODEL_PATH")
+    if env_model_path:
+        env_model_path = os.path.expanduser(env_model_path)
+        if os.path.isdir(env_model_path):
+            env_model_path = os.path.join(env_model_path, weight_name)
+        if os.path.isfile(env_model_path):
+            return env_model_path
+
+    repo_weight_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        weight_name,
+    )
+    if os.path.isfile(repo_weight_path):
+        return repo_weight_path
+
+    return None
+
+
 def load_model(
     pretrained_model_name_or_path: str = "stabilityai/stable-virtual-camera",
     weight_name: str = "model.safetensors",
     device: str | torch.device = "cuda",
     verbose: bool = False,
 ) -> Seva:
-    if os.path.isdir(pretrained_model_name_or_path):
+    local_weight_path = _resolve_local_weight_path(weight_name)
+    if local_weight_path is not None:
+        weight_path = local_weight_path
+    elif os.path.isdir(pretrained_model_name_or_path):
         weight_path = os.path.join(pretrained_model_name_or_path, weight_name)
     else:
         weight_path = hf_hub_download(
