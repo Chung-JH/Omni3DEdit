@@ -6,7 +6,7 @@ Commit：`13da5f2c9e873c0f763ac09387f65c7153556d6a`
 
 ## 结论
 
-本次继续复现已绕过 `stabilityai/stable-virtual-camera/model.safetensors` gated 下载问题，改为优先加载仓库根目录本地 `model.safetensors`。同时处理了后续暴露出的本地 VAE、OpenCLIP、VGGT 和 demo 数据过滤问题。
+本次继续复现已绕过 `stabilityai/stable-virtual-camera/model.safetensors` gated 下载问题，改为优先加载本地 SEVA 权重。当前本地 SEVA 权重已归档到 `weights/seva/`。同时处理了后续暴露出的本地 VAE、OpenCLIP、VGGT 和 demo 数据过滤问题。
 
 remove 任务最终未生成图片，当前阻塞点是 8GB RTX 4060 显存不足：在 train/test dataset 分别初始化 `VGGTPipeline` 时，第二次将 `facebook/VGGT-1B` 搬到 GPU 触发 OOM：
 
@@ -21,13 +21,13 @@ GPU 0 has a total capacity of 8.00 GiB of which 2.66 GiB is free.
 
 本轮新增验证：
 
-- `model.safetensors`：4.8G，SHA256 `10e69ea003c313e6bdfc7ee40376d1c19ea6036c20bd384e94b483dec8350396`
-- `modelv1.1.safetensors`：4.8G，SHA256 `b45d13cb89fe652d607c31989e5f71c2f1217a4f0939301fb60f3b941d6636da`
+- `weights/seva/model.safetensors`：4.8G，SHA256 `10e69ea003c313e6bdfc7ee40376d1c19ea6036c20bd384e94b483dec8350396`
+- `weights/seva/modelv1.1.safetensors`：4.8G，SHA256 `b45d13cb89fe652d607c31989e5f71c2f1217a4f0939301fb60f3b941d6636da`
 - 两个 safetensors 均可用 `safetensors.torch.load_file(..., device="cpu")` 打开，均为 1146 个 tensor。
-- `SEVA_MODEL_PATH=./model.safetensors` 的路径解析验证通过，不再调用 `hf_hub_download()`。
+- `SEVA_MODEL_PATH=weights/seva/model.safetensors` 的路径解析验证通过，不再调用 `hf_hub_download()`。
 - 本地 `sdxl-vae/sdxl_vae.safetensors` 可构造 SGM `AutoencoderKL`，加载结果为 0 missing、2 个 EMA 相关 unexpected key。
-- OpenCLIP `ViT-H-14/laion2b_s32b_b79k` 已补齐到 HuggingFace cache，并通过 `clip ok` 加载验证。
-- `facebook/VGGT-1B` 已补齐到 HuggingFace cache，并通过 `vggt ok` 加载验证。
+- OpenCLIP `ViT-H-14/laion2b_s32b_b79k` 已补齐并归档到 `weights/huggingface/hub/models--laion--CLIP-ViT-H-14-laion2B-s32B-b79K`，原 HuggingFace cache 路径为 symlink。
+- `facebook/VGGT-1B` 已补齐并归档到 `weights/huggingface/hub/models--facebook--VGGT-1B`，原 HuggingFace cache 路径为 symlink。
 
 本轮新增补丁：
 
@@ -48,7 +48,7 @@ GPU 0 has a total capacity of 8.00 GiB of which 2.66 GiB is free.
 最后一次 remove 命令：
 
 ```bash
-SEVA_MODEL_PATH=./model.safetensors \
+SEVA_MODEL_PATH=weights/seva/model.safetensors \
 SEVA_VAE_PATH=./sdxl-vae/sdxl_vae.safetensors \
 HF_HUB_DISABLE_XET=1 \
 CUDA_VISIBLE_DEVICES=0 \
@@ -106,8 +106,8 @@ SHA256 记录见 `checksums.txt`：
 7ce174a880acec5d5cab3738f47733368fd0eeabb26c95156954732404ffc988  checkpoints/omni3dedit_add.ckpt
 a2bd302eba68feb0d9a33e723c54bbe0b35c0b4bd1732282fab22e4749fd7cd7  checkpoints/omni3dedit_apperance.ckpt
 63aeecb90ff7bc1c115395962d3e803571385b61938377bc7089b36e81e92e2e  sdxl-vae/sdxl_vae.safetensors
-10e69ea003c313e6bdfc7ee40376d1c19ea6036c20bd384e94b483dec8350396  model.safetensors
-b45d13cb89fe652d607c31989e5f71c2f1217a4f0939301fb60f3b941d6636da  modelv1.1.safetensors
+10e69ea003c313e6bdfc7ee40376d1c19ea6036c20bd384e94b483dec8350396  weights/seva/model.safetensors
+b45d13cb89fe652d607c31989e5f71c2f1217a4f0939301fb60f3b941d6636da  weights/seva/modelv1.1.safetensors
 ```
 
 下载说明：
@@ -184,7 +184,7 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 - CUDA 可用，DDP 单进程启动成功。
 - 在 `SevaEngine.__init__` 中调用 `seva.utils_mmdit.load_model()` 时尝试下载 `stabilityai/stable-virtual-camera/model.safetensors`。
 - HuggingFace 返回 gated repo 401，推理退出，状态码 1。
-- 该阻塞已由本轮本地 `SEVA_MODEL_PATH=./model.safetensors` 补丁解决；当前最新阻塞为 VGGT 显存 OOM，见上方“继续执行记录”。
+- 该阻塞已由本轮本地 `SEVA_MODEL_PATH=weights/seva/model.safetensors` 补丁解决；当前最新阻塞为 VGGT 显存 OOM，见上方“继续执行记录”。
 
 日志：
 

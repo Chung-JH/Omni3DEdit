@@ -35,12 +35,13 @@ def _resolve_local_weight_path(weight_name: str) -> str | None:
         if os.path.isfile(env_model_path):
             return env_model_path
 
-    repo_weight_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        weight_name,
-    )
-    if os.path.isfile(repo_weight_path):
-        return repo_weight_path
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for repo_weight_path in (
+        os.path.join(repo_root, "weights", "seva", weight_name),
+        os.path.join(repo_root, weight_name),
+    ):
+        if os.path.isfile(repo_weight_path):
+            return repo_weight_path
 
     return None
 
