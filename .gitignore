@@ -23,7 +23,7 @@ wandb/
 lightning_logs/
 
 # Data (keep demo data tracked)
-sdxl-vae/
+# sdxl-vae/
 
 # IDE
 .vscode/
