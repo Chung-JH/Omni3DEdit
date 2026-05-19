@@ -1,8 +1,8 @@
-# Omni3DEdit scripts 测试记录
+# Omni3DEdit 脚本测试记录
 
 日期：2026-05-17  
 仓库：`/home/ubuntu/Project/Omni3DEdit`  
-Commit：`7a77e6729f4ad1e8b47d2121e1a87f3ddc142542`
+提交：`7a77e6729f4ad1e8b47d2121e1a87f3ddc142542`
 
 ## 结论
 

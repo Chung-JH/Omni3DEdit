@@ -1,18 +1,18 @@
-# Omni3DEdit Conversation Context Summary
+# Omni3DEdit 对话上下文总结
 
-Date: 2026-05-19  
-Local repo: `/home/ubuntu/Project/Omni3DEdit`  
-Server repo discussed: `/zhongjiahui/Project/Omni3DEdit`
+日期：2026-05-19
+本地仓库：`/home/ubuntu/Project/Omni3DEdit`
+讨论中的服务器仓库：`/zhongjiahui/Project/Omni3DEdit`
 
-## Purpose
+## 目的
 
-This document summarizes the debugging context from the prior conversation so a new chat can continue without re-deriving the same facts.
+本文总结上一轮对话中的调试上下文，方便新对话继续处理问题，不必重新推导已经确认过的事实。
 
-The main topic was making Omni3DEdit scripts run on a server without moving code or weights, mostly by fixing symlinks, Python paths, HuggingFace cache paths, and VAE loading behavior.
+主要目标是在不移动代码和权重文件的前提下，让 Omni3DEdit 脚本能在服务器上运行。排查重点包括符号链接、Python 路径、HuggingFace 缓存路径，以及 VAE 加载行为。
 
-## Current Local Worktree State
+## 当前本地工作区状态
 
-At the time this summary was written, `git status --short` showed:
+编写本总结时，`git status --short` 显示：
 
 ```text
  M scripts/run_appearance_1gpu.sh
@@ -20,25 +20,25 @@ At the time this summary was written, `git status --short` showed:
 ?? weights/
 ```
 
-The only tracked file with an uncommitted local diff was:
+当时唯一有未提交 diff 的已跟踪文件是：
 
 ```text
 scripts/run_appearance_1gpu.sh
 ```
 
-The diff changes the appearance checkpoint path from the original typo:
+该 diff 将 appearance checkpoint 路径从原始拼写错误：
 
 ```text
 checkpoints/omni3dedit_appearance.ckpt
 ```
 
-to:
+改为：
 
 ```text
 checkpoints/omni3dedit_appearance.ckpt
 ```
 
-No current uncommitted diff was present in:
+以下文件当时没有未提交 diff：
 
 ```text
 seva/modules/autoencoder.py
@@ -46,25 +46,25 @@ seva/utils_mmdit.py
 configs/train/seva_edit_mmdit_*.yaml
 ```
 
-## Existing Records
+## 已有记录
 
-Important existing notes:
+重要已有记录：
 
-- `repro_records/2026-05-14_omni3dedit/README.md`: earlier reproduction and environment setup notes.
-- `repro_records/2026-05-17_scripts_test/README.md`: local script test results.
-- `server_packages/2026-05-16_omni3dedit/SERVER_SETUP.md`: server package/runtime guidance.
+- `repro_records/2026-05-14_omni3dedit/README.md`：早期复现与环境配置记录。
+- `repro_records/2026-05-17_scripts_test/README.md`：本地脚本测试结果。
+- `server_packages/2026-05-16_omni3dedit/SERVER_SETUP.md`：服务器打包和运行指导。
 
-The 2026-05-17 script test found that all `scripts/*.sh` passed `bash -n`, but none completed a successful local train/inference run in the local 1-GPU RTX 4060 8GB environment.
+2026-05-17 的脚本测试结论是：所有 `scripts/*.sh` 都通过了 `bash -n` 语法检查，但在本地单卡 RTX 4060 8GB 环境中，没有任何脚本完成一次成功的训练或推理。
 
-## Server Path Strategy
+## 服务器路径策略
 
-The server project lives at:
+服务器上的项目路径是：
 
 ```text
 /zhongjiahui/Project/Omni3DEdit
 ```
 
-The goal was to avoid moving actual weight files. The intended approach was to create symlinks so project-relative paths exist:
+目标是不移动真实权重文件。预期做法是创建符号链接，让项目相对路径存在：
 
 ```text
 checkpoints/
@@ -73,7 +73,7 @@ weights/huggingface/hub/
 sdxl-vae/
 ```
 
-Important project-expected paths:
+项目期望的重要路径：
 
 ```text
 checkpoints/omni3dedit_add.ckpt
@@ -83,56 +83,56 @@ weights/seva/model.safetensors
 sdxl-vae/sdxl_vae.safetensors
 ```
 
-Note: the original scripts and README use the typo `appearance` for the appearance checkpoint. One local script was changed to `appearance`, but checkpoint filenames on disk may still use `appearance`.
+注意：原始脚本和 README 中 appearance checkpoint 的文件名曾有拼写问题。一个本地脚本已经改成 `appearance`，但磁盘上的 checkpoint 文件名可能仍然使用旧拼写。
 
-## HuggingFace Cache
+## HuggingFace 缓存
 
-`HF_HUB_CACHE` is not explicitly read by project code via `os.environ.get(...)`. It is read implicitly by HuggingFace-related libraries.
+`HF_HUB_CACHE` 并不是由项目代码通过 `os.environ.get(...)` 显式读取，而是由 HuggingFace 相关库隐式读取。
 
-It affects calls such as:
+它会影响以下调用：
 
-- `hf_hub_download(...)` in `seva/utils.py` and `seva/utils_mmdit.py`
+- `seva/utils.py` 和 `seva/utils_mmdit.py` 中的 `hf_hub_download(...)`
 - `VGGT.from_pretrained("facebook/VGGT-1B")`
 - `open_clip.create_model_and_transforms("ViT-H-14", pretrained="laion2b_s32b_b79k")`
-- Transformer/OpenCLIP loaders if those config paths are exercised
+- 如果相关配置路径被执行，也会影响 Transformer/OpenCLIP 加载器
 
-The recommended setting was:
+推荐设置：
 
 ```bash
 export HF_HUB_CACHE="$PWD/weights/huggingface/hub"
 ```
 
-Alternatively, symlink the default cache:
+另一种做法是把默认缓存路径做成符号链接：
 
 ```text
 /root/.cache/huggingface/hub -> /zhongjiahui/weights/huggingface/hub
 ```
 
-That symlink was later requested to be removed. The safe command is:
+后来要求移除这个符号链接。安全命令是：
 
 ```bash
 rm /root/.cache/huggingface/hub
 ```
 
-Do not use a trailing slash when removing a directory symlink.
+删除目录符号链接时不要在路径末尾加斜杠。
 
-## VGGT Code Issue
+## VGGT 代码问题
 
-The server hit:
+服务器遇到过：
 
 ```text
 ModuleNotFoundError: No module named 'vggt.models.vggt'
 ```
 
-Root cause: local `src/vggt` is a nested Git repository/gitlink, not normal files in the parent repo. The parent repo had a gitlink:
+根因：本地 `src/vggt` 是一个嵌套 Git 仓库/gitlink，不是父仓库中的普通文件。父仓库记录了一个 gitlink：
 
 ```text
 160000 b02cc03ceee70821ed1231a530c1992507ef9862 src/vggt
 ```
 
-but no usable `.gitmodules` mapping for automatic checkout on the server.
+但没有可用于服务器自动 checkout 的 `.gitmodules` 映射。
 
-Fast server fix:
+服务器上的快速修复：
 
 ```bash
 cd /zhongjiahui/Project/Omni3DEdit
@@ -143,46 +143,46 @@ git checkout b02cc03ceee70821ed1231a530c1992507ef9862
 cd ../..
 ```
 
-Validation:
+验证：
 
 ```bash
 cd /zhongjiahui/Project/Omni3DEdit
 PYTHONPATH="$PWD:$PWD/src/vggt" python -c "from vggt.models.vggt import VGGT; print('OK')"
 ```
 
-The scripts originally used:
+脚本原本使用：
 
 ```bash
 PYTHONPATH=. \
 ```
 
-For server use, they need:
+服务器运行时需要：
 
 ```bash
 PYTHONPATH="$PWD:$PWD/src/vggt" \
 ```
 
-or at least:
+至少也需要：
 
 ```bash
 PYTHONPATH=.:src/vggt \
 ```
 
-## SEVA Base Model Loading
+## SEVA 基座模型加载
 
-The server also hit HuggingFace download attempts for:
+服务器还遇到过对以下文件的 HuggingFace 下载尝试：
 
 ```text
 stabilityai/stable-virtual-camera/model.safetensors
 ```
 
-That happens in:
+触发位置：
 
 ```text
 seva/utils_mmdit.py
 ```
 
-Current local `seva/utils_mmdit.py` includes local-first loading via `SEVA_MODEL_PATH` and fallback paths:
+当前本地 `seva/utils_mmdit.py` 已包含基于 `SEVA_MODEL_PATH` 和 fallback 路径的本地优先加载逻辑：
 
 ```text
 SEVA_MODEL_PATH
@@ -190,7 +190,7 @@ weights/seva/model.safetensors
 ./model.safetensors
 ```
 
-If the server still tries to download `stabilityai/stable-virtual-camera`, check:
+如果服务器仍然尝试下载 `stabilityai/stable-virtual-camera`，检查：
 
 ```bash
 cd /zhongjiahui/Project/Omni3DEdit
@@ -199,21 +199,21 @@ ls -lh "$SEVA_MODEL_PATH"
 grep -n "SEVA_MODEL_PATH\|_resolve_local_weight_path\|hf_hub_download" seva/utils_mmdit.py
 ```
 
-If `grep` does not show `SEVA_MODEL_PATH`, the server code is missing the local-first patch.
+如果 `grep` 看不到 `SEVA_MODEL_PATH`，说明服务器代码缺少本地优先加载补丁。
 
-Expected runtime setting:
+预期运行时设置：
 
 ```bash
 export SEVA_MODEL_PATH="$PWD/weights/seva/model.safetensors"
 ```
 
-## VAE Loading Issue
+## VAE 加载问题
 
-The conversation went through two VAE paths.
+上一轮对话中讨论了两条 VAE 路径。
 
-### Initial Release Behavior
+### 初始发布版行为
 
-`seva/modules/autoencoder.py` in Initial release uses Diffusers:
+初始发布版的 `seva/modules/autoencoder.py` 使用 Diffusers：
 
 ```python
 AutoencoderKL.from_pretrained(
@@ -224,39 +224,39 @@ AutoencoderKL.from_pretrained(
 )
 ```
 
-This can fail on the server with:
+服务器上可能失败并报：
 
 ```text
 401 Client Error
 stabilityai/stable-diffusion-2-1-base is not a local folder and is not a valid model identifier
 ```
 
-That means Diffusers attempted to access HuggingFace and the server lacked permission/login or cached files.
+这表示 Diffusers 尝试访问 HuggingFace，但服务器缺少权限、登录状态或完整本地缓存。
 
-Possible fixes:
+可选修复：
 
 ```bash
 huggingface-cli login
 ```
 
-or ensure a complete local Diffusers cache for `stabilityai/stable-diffusion-2-1-base/vae`.
+或者确保 `stabilityai/stable-diffusion-2-1-base/vae` 的本地 Diffusers 缓存完整。
 
-### Local SGM VAE Patch
+### 本地 SGM VAE 补丁
 
-Earlier local work added an SGM local VAE loader that used:
+早前本地改动加入了 SGM 本地 VAE 加载器，使用：
 
 ```text
 SEVA_VAE_PATH
 ./sdxl-vae/sdxl_vae.safetensors
 ```
 
-That patch was introduced in commit:
+该补丁引入于提交：
 
 ```text
 b0c670e 2026-05-15 10:59:46 +0800 Chung-JH feat: modify seva代码和.yaml
 ```
 
-The SGM-format VAE key check on the server showed:
+服务器上的 SGM 格式 VAE key 检查显示：
 
 ```text
 down_blocks 0
@@ -265,24 +265,24 @@ encoder.down 74
 decoder.up 10
 ```
 
-This indicates an SGM-style state dict, not a Diffusers `down_blocks/up_blocks` state dict.
+这说明该 state dict 是 SGM 风格，而不是 Diffusers `down_blocks/up_blocks` 风格。
 
-As of this summary, local `seva/modules/autoencoder.py` currently matches Initial release behavior, not the SGM local VAE patch.
+截至本总结编写时，本地 `seva/modules/autoencoder.py` 当前匹配初始发布版行为，不包含 SGM 本地 VAE 补丁。
 
-Decision point for the next conversation:
+下一轮对话需要先决定：
 
-- If keeping Initial release behavior, fix HuggingFace auth/cache for Diffusers VAE.
-- If avoiding HuggingFace auth, restore the local SGM VAE patch and use `sdxl-vae/sdxl_vae.safetensors`.
+- 如果保留初始发布版行为，就修复 Diffusers VAE 的 HuggingFace 登录或缓存。
+- 如果要避免 HuggingFace 登录，就恢复本地 SGM VAE 补丁，并使用 `sdxl-vae/sdxl_vae.safetensors`。
 
-## CLIP And DINO Usage
+## CLIP 和 DINO 使用情况
 
-CLIP is used by:
+CLIP 使用位置：
 
 ```text
 seva/modules/conditioner.py
 ```
 
-The relevant call is:
+相关调用：
 
 ```python
 open_clip.create_model_and_transforms(
@@ -290,27 +290,27 @@ open_clip.create_model_and_transforms(
 )
 ```
 
-It encodes conditioning images via `encode_image(...)`.
+它通过 `encode_image(...)` 编码条件图像。
 
-DINO is not explicitly loaded by Omni3DEdit code as a standalone model. It appears through VGGT internals. `VGGT.from_pretrained("facebook/VGGT-1B")` constructs VGGT, whose aggregator uses DINOv2-style patch embedding, e.g. `dinov2_vitl14_reg`.
+Omni3DEdit 代码没有显式单独加载 DINO。DINO 通过 VGGT 内部出现。`VGGT.from_pretrained("facebook/VGGT-1B")` 会构造 VGGT，它的 aggregator 使用 DINOv2 风格的 patch embedding，例如 `dinov2_vitl14_reg`。
 
-Automatic downloads happen because:
+自动下载的原因：
 
-- OpenCLIP loads pretrained CLIP weights.
-- VGGT uses HuggingFace Hub via `PyTorchModelHubMixin`.
-- Diffusers uses HuggingFace Hub for `stable-diffusion-2-1-base` VAE if Initial release behavior is active.
+- OpenCLIP 会加载预训练 CLIP 权重。
+- VGGT 通过 `PyTorchModelHubMixin` 使用 HuggingFace Hub。
+- 如果初始发布版 VAE 行为生效，Diffusers 会通过 HuggingFace Hub 加载 `stable-diffusion-2-1-base` VAE。
 
-After a successful download, reruns should reuse cache unless:
+成功下载后，重新运行通常会复用缓存，除非：
 
-- the cache path changes,
-- a different user runs the script,
-- the cache structure is incomplete,
-- symlinks point to missing files,
-- `HF_HUB_OFFLINE=1` is set but local cache is incomplete.
+- 缓存路径改变；
+- 换了另一个用户运行脚本；
+- 缓存结构不完整；
+- 符号链接指向缺失文件；
+- 设置了 `HF_HUB_OFFLINE=1`，但本地缓存不完整。
 
-## Common Commands For Server Debugging
+## 服务器调试常用命令
 
-Check Python path and VGGT:
+检查 Python 路径和 VGGT：
 
 ```bash
 cd /zhongjiahui/Project/Omni3DEdit
@@ -318,7 +318,7 @@ which python
 PYTHONPATH="$PWD:$PWD/src/vggt" python -c "from vggt.models.vggt import VGGT; print('OK')"
 ```
 
-Check SEVA local model path:
+检查 SEVA 本地模型路径：
 
 ```bash
 cd /zhongjiahui/Project/Omni3DEdit
@@ -327,7 +327,7 @@ ls -lh "$SEVA_MODEL_PATH"
 grep -n "SEVA_MODEL_PATH\|_resolve_local_weight_path\|hf_hub_download" seva/utils_mmdit.py
 ```
 
-Check VAE key format:
+检查 VAE key 格式：
 
 ```bash
 cd /zhongjiahui/Project/Omni3DEdit
@@ -342,25 +342,25 @@ print("decoder.up", sum(k.startswith("decoder.up") for k in sd))
 PY
 ```
 
-Avoid PDB during server runs:
+避免服务器运行时进入 PDB：
 
 ```text
 --debug
 ```
 
-in scripts causes failures to stop in `(Pdb)`. For unattended server runs, change it to:
+脚本中包含该参数时，失败会停在 `(Pdb)`。无人值守的服务器运行应改为：
 
 ```text
 --debug=False
 ```
 
-## Recommended Next Steps
+## 建议后续步骤
 
-1. Decide VAE strategy first:
-   - Diffusers VAE with HuggingFace login/cache.
-   - Local SGM VAE patch with `sdxl-vae/sdxl_vae.safetensors`.
-2. Fix script `PYTHONPATH` to include `src/vggt`.
-3. Ensure `src/vggt` exists on server at commit `b02cc03ceee70821ed1231a530c1992507ef9862`.
-4. Ensure `SEVA_MODEL_PATH` points to a real local `model.safetensors`, or server code includes the local-first `utils_mmdit.py` patch.
-5. Remove or disable `--debug` for server batch runs.
-6. Re-run one 1-GPU script first before trying 2-GPU scripts.
+1. 先决定 VAE 策略：
+   - 使用 Diffusers VAE，并配置 HuggingFace 登录或缓存。
+   - 使用本地 SGM VAE 补丁，并指定 `sdxl-vae/sdxl_vae.safetensors`。
+2. 修复脚本 `PYTHONPATH`，加入 `src/vggt`。
+3. 确保服务器上存在 `src/vggt`，且位于提交 `b02cc03ceee70821ed1231a530c1992507ef9862`。
+4. 确保 `SEVA_MODEL_PATH` 指向真实存在的本地 `model.safetensors`，或者服务器代码包含 `utils_mmdit.py` 的本地优先补丁。
+5. 服务器批处理运行时移除或禁用 `--debug`。
+6. 先重新运行一个单卡脚本，再尝试双卡脚本。

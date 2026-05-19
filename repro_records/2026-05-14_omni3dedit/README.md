@@ -2,7 +2,7 @@
 
 日期：2026-05-14  
 仓库：`/home/ubuntu/Project/Omni3DEdit`  
-Commit：`13da5f2c9e873c0f763ac09387f65c7153556d6a`
+提交：`13da5f2c9e873c0f763ac09387f65c7153556d6a`
 
 ## 结论
 
@@ -26,8 +26,8 @@ GPU 0 has a total capacity of 8.00 GiB of which 2.66 GiB is free.
 - 两个 safetensors 均可用 `safetensors.torch.load_file(..., device="cpu")` 打开，均为 1146 个 tensor。
 - `SEVA_MODEL_PATH=weights/seva/model.safetensors` 的路径解析验证通过，不再调用 `hf_hub_download()`。
 - 本地 `sdxl-vae/sdxl_vae.safetensors` 可构造 SGM `AutoencoderKL`，加载结果为 0 missing、2 个 EMA 相关 unexpected key。
-- OpenCLIP `ViT-H-14/laion2b_s32b_b79k` 已补齐并归档到 `weights/huggingface/hub/models--laion--CLIP-ViT-H-14-laion2B-s32B-b79K`，原 HuggingFace cache 路径为 symlink。
-- `facebook/VGGT-1B` 已补齐并归档到 `weights/huggingface/hub/models--facebook--VGGT-1B`，原 HuggingFace cache 路径为 symlink。
+- OpenCLIP `ViT-H-14/laion2b_s32b_b79k` 已补齐并归档到 `weights/huggingface/hub/models--laion--CLIP-ViT-H-14-laion2B-s32B-b79K`，原 HuggingFace 缓存路径为符号链接。
+- `facebook/VGGT-1B` 已补齐并归档到 `weights/huggingface/hub/models--facebook--VGGT-1B`，原 HuggingFace 缓存路径为符号链接。
 
 本轮新增补丁：
 
@@ -183,7 +183,7 @@ PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
 - 程序成功进入 PyTorch Lightning 初始化。
 - CUDA 可用，DDP 单进程启动成功。
 - 在 `SevaEngine.__init__` 中调用 `seva.utils_mmdit.load_model()` 时尝试下载 `stabilityai/stable-virtual-camera/model.safetensors`。
-- HuggingFace 返回 gated repo 401，推理退出，状态码 1。
+- HuggingFace 返回受限仓库 401，推理退出，状态码 1。
 - 该阻塞已由本轮本地 `SEVA_MODEL_PATH=weights/seva/model.safetensors` 补丁解决；当前最新阻塞为 VGGT 显存 OOM，见上方“继续执行记录”。
 
 日志：
