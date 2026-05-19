@@ -10,7 +10,7 @@ class AutoEncoder(nn.Module):
     def __init__(self, chunk_size: int | None = None):
         super().__init__()
         self.module = AutoencoderKL.from_pretrained(
-            "stabilityai/stable-diffusion-2-1-base",
+            "/zhongjiahui/weights/stabilityai/stable-diffusion-2-1-base",
             subfolder="vae",
             force_download=False,
             low_cpu_mem_usage=False,
@@ -20,8 +20,7 @@ class AutoEncoder(nn.Module):
 
     def _encode(self, x: torch.Tensor) -> torch.Tensor:
         return (
-            self.module.encode(x).latent_dist.mean  # type: ignore
-            * self.scale_factor
+            self.module.encode(x).latent_dist.mean * self.scale_factor  # type: ignore
         )
 
     def encode(self, x: torch.Tensor, chunk_size: int | None = None) -> torch.Tensor:

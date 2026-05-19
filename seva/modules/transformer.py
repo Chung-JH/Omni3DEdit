@@ -2,7 +2,11 @@ import torch
 import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import nn
-from torch.nn.attention import SDPBackend, sdpa_kernel
+try:
+    from torch.nn.attention import SDPBackend, sdpa_kernel  # requires torch>=2.2
+except ImportError:
+    SDPBackend = None
+    sdpa_kernel = None
 import deepspeed
 import xformers.ops as xops
 
@@ -282,7 +286,11 @@ if __name__ == "__main__":
     import torch.nn.functional as F
     from einops import rearrange, repeat
     from torch import nn
-    from torch.nn.attention import SDPBackend, sdpa_kernel
+    try:
+        from torch.nn.attention import SDPBackend, sdpa_kernel
+    except ImportError:
+        SDPBackend = None
+        sdpa_kernel = None
     attn  = Attention(query_dim=1024, context_dim=1024, heads=16, dim_head=64, dropout=0.0).to(torch.bfloat16)
     x = torch.randn(1, 1024, 1024).to(torch.bfloat16)
     context = torch.randn(1, 2, 1024).to(torch.bfloat16)

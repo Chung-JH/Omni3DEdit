@@ -202,8 +202,9 @@ class VGGTPipeline(object):
             points: 3D点云列表 [num_pnt, 3]
             point_colors: 点云颜色列表 [num_pnt, 3], 范围 [0, 1]
         """
-        # 加载和预处理图像
-        ori_imgs, images = load_and_preprocess_images(img_paths)
+        #! 加载和预处理图像(修改)
+        images = load_and_preprocess_images(img_paths)
+        ori_imgs = [Image.open(p).convert("RGB") for p in img_paths]
         images = images.to(self.dtype).to(self.device)
         self.model = self.model.to(self.device)
         # 保存原始图像尺寸

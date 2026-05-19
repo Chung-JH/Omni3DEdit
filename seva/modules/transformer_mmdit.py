@@ -2,7 +2,11 @@ import torch
 import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import nn
-from torch.nn.attention import SDPBackend, sdpa_kernel
+try:
+    from torch.nn.attention import SDPBackend, sdpa_kernel  # requires torch>=2.2
+except ImportError:
+    SDPBackend = None
+    sdpa_kernel = None
 import deepspeed
 import math
 import xformers.ops as xops
