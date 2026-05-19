@@ -125,7 +125,7 @@ python -u -m torch.distributed.run \
     --no_date \
     --train=False \
     --debug \
-    --resume=checkpoints/omni3dedit_apperance.ckpt
+    --resume=checkpoints/omni3dedit_appearance.ckpt
 ```
 
   Small note: we also provide a  uni-trained checkpoint (`checkpoints/omni3dedit_unitrain.ckpt`), but its single-task performance is usually weaker than task-specific checkpoints.

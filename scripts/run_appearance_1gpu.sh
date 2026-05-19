@@ -15,4 +15,4 @@ python -u -m torch.distributed.run \
     --no_date \
     --train=False \
     --debug \
-    --resume=checkpoints/omni3dedit_apperance.ckpt
+    --resume=checkpoints/omni3dedit_appearance.ckpt

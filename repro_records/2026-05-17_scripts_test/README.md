@@ -40,7 +40,7 @@ Commit：`7a77e6729f4ad1e8b47d2121e1a87f3ddc142542`
 | --- | --- | --- |
 | `scripts/run_add_1gpu.sh` | 失败 | 能启动到 `Restoring states from the checkpoint path at checkpoints/omni3dedit_add.ckpt`，随后子进程 `SIGKILL`。 |
 | `scripts/run_add_2gpu.sh` | 失败 | 当前机器仅 1 张 GPU；双卡启动未成功，最终 `local_rank` 子进程 `SIGKILL`。 |
-| `scripts/run_appearance_1gpu.sh` | 失败 | 能启动到 `Restoring states from the checkpoint path at checkpoints/omni3dedit_apperance.ckpt`，随后子进程 `SIGKILL`。 |
+| `scripts/run_appearance_1gpu.sh` | 失败 | 能启动到 `Restoring states from the checkpoint path at checkpoints/omni3dedit_appearance.ckpt`，随后子进程 `SIGKILL`。 |
 | `scripts/run_appearance_2gpu.sh` | 失败 | 当前机器仅 1 张 GPU；双卡启动未成功，最终 `local_rank` 子进程 `SIGKILL`。 |
 | `scripts/run_remove_1gpu.sh` | 失败 | 明确报错：`KeyError: "filename 'storages' not found"`，发生在 Lightning 恢复 `checkpoints/omni3dedit_remove.ckpt` 时。 |
 | `scripts/run_remove_2gpu.sh` | 失败 | 当前机器仅 1 张 GPU；双卡启动未成功，最终子进程 `SIGKILL`。 |
