@@ -16,8 +16,8 @@ checkpoints/
 
 # Logs & results
 logs/
-results/
-results_unitrain/
+# results/
+# results_unitrain/
 testtube/
 wandb/
 lightning_logs/
